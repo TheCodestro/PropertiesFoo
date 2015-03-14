@@ -15,8 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
+import static java.lang.String.format;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,7 +29,8 @@ import java.util.Properties;
  */
 public class PropertiesFoo {
 
-    public static Properties prop = new Properties();
+    private static final Properties prop = new Properties();
+    private static final File propFile = new File("config.properties");
     public static Map<String, String> mapProp;
     // Initializes Streams as null in case they fail
     private static ObjectInputStream propHash = null;
@@ -39,15 +39,17 @@ public class PropertiesFoo {
     private static FileOutputStream propertiesOutStream = null;
     private static FileWriter fwriter = null;
     private static BufferedWriter buffOut = null;
-    
-    private static final File propFile = new File("config.properties");
+
+
+
     /**
      * Loads the properties file and maps it to a HashMap using Properties file.
+     *
      * @return boolean Whether it actually managed to read it or not.
      * @throws java.io.IOException
      */
     public static boolean loadPropFile() throws IOException {
-    
+
         // wasSuccess assumes it failed. Prevent later errors.
         boolean wasSuccess = false;
         try {
@@ -55,8 +57,9 @@ public class PropertiesFoo {
             propertiesFileStream = new FileInputStream(propFile);
             prop.load(propertiesFileStream);
 
-            for (final String name: prop.stringPropertyNames())
+            for (final String name : prop.stringPropertyNames()) {
                 mapProp.put(name, prop.getProperty(name));
+            }
             wasSuccess = true;
             System.console().printf(null, "Non-serialized Properties loaded");
         } catch (IOException ex) {
@@ -79,9 +82,10 @@ public class PropertiesFoo {
 
     /**
      * Loads property hash, basically a serialized object.
+     *
      * @return
      * @throws IOException
-     * @throws ClassNotFoundException 
+     * @throws ClassNotFoundException
      */
     public static boolean loadPropHash() throws IOException, ClassNotFoundException {
         boolean wasSuccess = false;
@@ -90,7 +94,7 @@ public class PropertiesFoo {
             propHash = new ObjectInputStream(new FileInputStream(propFile));
             Object readHash;
             readHash = propHash.readObject();
-            if(readHash != null && readHash instanceof HashMap) {
+            if (readHash != null && readHash instanceof HashMap) {
                 mapProp.putAll((HashMap) readHash);
             }
             wasSuccess = true;
@@ -112,19 +116,20 @@ public class PropertiesFoo {
         }
         return wasSuccess;
     }
-    
+
     /**
      * Iterates through the hash and saves to file as strings.
+     *
      * @param toBeSaved
      * @return
-     * @throws IOException 
+     * @throws IOException
      */
     public static boolean savePropFile(HashMap<String, String> toBeSaved) throws IOException {
         boolean wasSuccess = false;
         int count = 0;
         int max = toBeSaved.size();
         Iterator<Entry<String, String>> hashItr = toBeSaved.entrySet().iterator();
-        
+
         try {
             fwriter = new FileWriter(propFile);
             buffOut = new BufferedWriter(fwriter);
@@ -132,7 +137,7 @@ public class PropertiesFoo {
                 Map.Entry<String, String> pairs = hashItr.next();
                 buffOut.write(pairs.getValue() + "\n");
                 count++;
-                }
+            }
             wasSuccess = true;
             System.console().printf(null, "Properties set to the file (not serialized).");
         } catch (IOException ex) {
@@ -152,12 +157,13 @@ public class PropertiesFoo {
         }
         return wasSuccess;
     }
-    
+
     /**
      * Saves serialized HashMap to a file.
+     *
      * @param toBeSaved
-     * @return 
-     * @throws java.io.IOException 
+     * @return
+     * @throws java.io.IOException
      */
     public static boolean savePropHash(HashMap<String, String> toBeSaved) throws IOException {
         boolean wasSuccess = false;
@@ -180,100 +186,54 @@ public class PropertiesFoo {
         }
         return wasSuccess;
     }
-    /**
-     * Returns boolean whether property was correctly read. This basically is so
-     * it doesn't have to check each time a property wants to be done whether it
-     * is still null or whatnot, as the values are public to the package.
-     *
-     * @param theProperty this is the property to be read
-     * @return boolean if successful
-     * @throws IOException
-     */
-    public static boolean readProperty(String theProperty) throws IOException {
 
-        InputStream propertiesFile = null;
-        boolean successfulOrNot;
-        try {
-            propertiesFile = new FileInputStream("config.properties");
-            // Load the file
-            prop.load(propertiesFile);
-            String theValue = prop.getProperty(theProperty);
-            validProperties.put(theProperty, theValue);
-            // propertyValue = prop.getProperty(theProperty);
-            successfulOrNot = true;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            successfulOrNot = false;
-        } finally {
-            if (propertiesFile != null) {
-                try {
-                    propertiesFile.close();
-                    successfulOrNot = true;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    successfulOrNot = false;
-                }
-            }
-        }
-        return successfulOrNot;
+    public static boolean save1FileProp(String theProp, String theValue) throws IOException {
+        boolean wasSuccess = false;
+        // TODO: Save a single property to the file, not serialized.
+        return wasSuccess;
+    }
+
+    public static boolean save1SerProp(String theProp, String theValue) throws IOException {
+        boolean wasSuccess = false;
+        // TODO: Save a single property to the file, serialized. Might require reloading/saving.
+        return wasSuccess;
     }
 
     /**
-     * Save the value of a given property. Not used as of 14-Feb-2015 but in
-     * just in case I later add visual config.
+     * Gets a property and returns it as a string. Returns an empty string if
+     * the property does not exist.
      *
-     * @param args String in form "key=val" that is in config.properties
-     * @return returns True if successful, false otherwise.
-     * @throws java.io.IOException
+     * @param theProp
+     * @return
      */
-    public static boolean saveProperty(String args) throws IOException {
-        OutputStream output = null;
-        boolean successfulOrNot = false;
-        try {
-            output = new FileOutputStream("config.properties");
-            String[] splitArgs;
-            splitArgs = args.split("=", 2);
-            prop.setProperty(splitArgs[0], splitArgs[1]);
-            prop.store(output, null);
-            successfulOrNot = true;
-        } catch (IOException ex) {
-            ex.printStackTrace();
-            successfulOrNot = false;
-        } finally {
-            if (output != null) {
-                try {
-                    output.close();
-                    successfulOrNot = true;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    successfulOrNot = false;
-                }
-            }
-            return successfulOrNot;
-        }
-    }
-
-    /**
-     * Calls read property then returns the value of the property called. This
-     * is separate because in some later parts of the code it is not necessary
-     * to check if reading was successful, as it would not be running at that
-     * point (or shouldn't be anyway). Still will throw exception if reading
-     * doesn't work. May be removed, not sure this is needed since the prop
-     * variable is imported in other areas and seems to work fine.
-     *
-     * @param theProperty
-     * @return string theValue of theProperty
-     * @throws java.io.IOException
-     * @throws java.lang.NoSuchFieldException
-     * @throws java.lang.IllegalAccessException
-     */
-    public static String getAndReturn(String theProperty) throws IOException, NoSuchFieldException, IllegalAccessException {
-        readProperty(theProperty);
-        PropertiesFoo thisClass = new PropertiesFoo();
-        Field f1;
-        f1 = thisClass.getClass().getField(theProperty);
+    public static String getProp(String theProp) {
         String theValue;
-        theValue = (String) f1.get(thisClass);
+        if (mapProp.containsKey(theProp)) {
+            theValue = mapProp.get(theProp);
+        } else {
+            theValue = "";
+        }
         return theValue;
     }
+
+    /**
+     * Checks if the property exists, if so, sets it. Otherwise, returns error.
+     *
+     * @param theProp
+     * @param theValue
+     * @return
+     */
+    public static boolean setProp(String theProp, String theValue) {
+        boolean wasSuccess;
+        if (mapProp.containsKey(theProp)) {
+            mapProp.put(theProp, theValue);
+            wasSuccess = true;
+        } else {
+            String errorString = format("The property %s was not found", theProp);
+            System.console().printf(null, errorString);
+            wasSuccess = false;
+        }
+        return wasSuccess;
+    }
+
 }
